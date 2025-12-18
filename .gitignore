@@ -1,4 +1,4 @@
-# 核心忽略内容 (必须有)
+# === Unity 核心缓存 (绝对不能删) ===
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -7,7 +7,13 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
-# IDE 生成的文件 (VS, VSCode, Rider)
+# === IDE 生成的临时文件 ===
+# Visual Studio 缓存
+.vs/
+# Rider / IntelliJ 缓存 (未来可能会用到)
+.idea/
+
+# === 自动生成的项目引导文件 (Unity会自动重建) ===
 *.csproj
 *.unityproj
 *.sln
@@ -22,6 +28,6 @@
 *.opendb
 *.VC.db
 
-# 系统生成的文件
+# === 操作系统垃圾文件 ===
 .DS_Store
 Thumbs.db
