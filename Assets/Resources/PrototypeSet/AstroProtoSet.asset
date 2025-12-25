@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b3574327078f6f4ca093b706b5dc7be, type: 3}
+  m_Name: AstroProtoSet
+  m_EditorClassIdentifier: 
+  astroProtoList:
+  - {fileID: 11400000, guid: e21ea67c1e189f649847870c7cea98c9, type: 2}
+  - {fileID: 11400000, guid: faa54ffeeaa150e43937e083eb9ad2b4, type: 2}
+  - {fileID: 11400000, guid: ac03058eb5bed79439a394efcd48eb3f, type: 2}
+  - {fileID: 11400000, guid: a3786b0b744a4b7459229138c6deee67, type: 2}
+  - {fileID: 11400000, guid: 295d03163d3e01a4285daee17f1df0da, type: 2}
