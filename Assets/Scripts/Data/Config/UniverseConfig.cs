@@ -30,4 +30,9 @@ public class UniverseConfig : ScriptableObject
     [Tooltip("撞击产生碎片的速度范围")]
     public float minDebrisSpeed = 50f;
     public float maxDebrisSpeed = 100f;
+
+    [Tooltip("物理帧执行频率")]
+    public double physicsStep = 0.002;
+    [Tooltip("单帧最大执行次数")]
+    public int maxStepsPerFrame = 1000;
 }

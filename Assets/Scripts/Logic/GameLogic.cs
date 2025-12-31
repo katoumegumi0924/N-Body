@@ -5,36 +5,27 @@ using UnityEngine;
 /// </summary>
 public class GameLogic
 {
-    private AstroData astroData;
-    private AstroPhysics astroPhysics;
+    private GameData gameData;
+    private UniverseLogic universeLogic;
     private PlayerController playerController;
     private CameraController cameraController;
     private UniverseGen universeGen;
 
-    private AstroProtoSet protoSet;
-    private LineRenderer line;
+    // 时间累加器 指定时间执行一次物理Logic，避免倍速情况下dt过大
+    private double accumulator;
 
-
-    public void Init(AstroData _astroData, AstroProtoSet _protoSet)
+    public void Init(GameData _gameData)
     {
-        if(GameConfig.gameResourcesConfig.dragLinePrefab != null)
-        {
-            var drawObj = Object.Instantiate(GameConfig.gameResourcesConfig.dragLinePrefab);
-            this.line = drawObj.GetComponent<LineRenderer>();
-        }
+        gameData = _gameData;
 
-        this.protoSet = _protoSet;
-
-        astroData = _astroData;
-
-        astroPhysics = new AstroPhysics();
-        astroPhysics.Init(astroData, protoSet.astroProtoList[0]);
+        universeLogic = new UniverseLogic();
+        universeLogic.Init();
 
         universeGen = new UniverseGen();
-        universeGen.Init(astroData, protoSet);
+        universeGen.Init(gameData);
 
         playerController = new PlayerController();
-        playerController.Init(astroData, protoSet, line, universeGen);
+        playerController.Init(gameData, universeGen);
 
         cameraController = new CameraController();
         cameraController.Init(Camera.main);
@@ -42,14 +33,40 @@ public class GameLogic
 
     public void Free()
     {
-        astroData = null;
-        astroPhysics = null;
+        gameData = null;
+        universeLogic = null;
         playerController = null;
     }
 
     public void GameTick(float deltaTime)
     {
-        astroPhysics.LogicTick(deltaTime, cameraController.screenBounds);
+        // 获取固定步长和最大步数
+        double pStep = GameConfig.universeConfig.physicsStep;
+        int maxSteps = GameConfig.universeConfig.maxStepsPerFrame;
+
+        double dt = deltaTime * gameData.clock.timeScale;
+        accumulator += dt;
+        int stepCount = 0;
+        while (accumulator >= pStep)
+        { 
+            // 推进Ticks
+            long ticksInStep = gameData.clock.ToTicks(pStep);
+            gameData.clock.totalTicks += ticksInStep;
+
+            // 执行核心物理逻辑
+            universeLogic.LogicTick(gameData, pStep, cameraController.screenBounds);
+
+            // 消耗累加器
+            accumulator -= pStep;
+
+            // 限制单次执行的最大步数
+            stepCount++;
+            if (stepCount > maxSteps)
+            {
+                accumulator = 0;
+                break;
+            }
+        }  
     }
 
     public void OnUpdate()

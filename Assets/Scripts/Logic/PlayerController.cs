@@ -1,43 +1,25 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// PlayerInput：
 /// </summary>
 public class PlayerController
 {
-    private AstroData _data;
-    private AstroProtoSet _protoSet;
-    private LineRenderer _dragLine;
-    private UniverseGen _universeGen;
+    private GameData data;
+    private UniverseGen universeGen;
+    private Camera mainCamera;
 
-    private bool _isDragging;
-    private Vector2 _dragStart;
-    private Camera _mainCamera;
-
-    public void Init(AstroData data, AstroProtoSet protoSet, LineRenderer line, UniverseGen universeGen)
+    public void Init(GameData _data, UniverseGen _universeGen)
     {
-        _data = data;
-        _protoSet = protoSet;
-        _dragLine = line;
-        _universeGen = universeGen;
-
-        _mainCamera = Camera.main;
-
-        if (_dragLine != null)
-            _dragLine.enabled = false;
+        data = _data;
+        universeGen = _universeGen;
+        mainCamera = Camera.main;
     }
 
     public void Free()
     {
-        _data = null;
-        _protoSet = null;
-        _isDragging = false;
-
-        if (_dragLine != null)
-        {
-            _dragLine.enabled = false;
-            _dragLine.positionCount = 0;
-        }
+        data = null;
     }
 
     public void OnUpdate()
@@ -48,26 +30,29 @@ public class PlayerController
 
     public void HandleMouseInput()
     {
-        Vector2 mousePos = GetWorldMousePos();
+        DVector2 mousePos = GetWorldMousePos();
+        if (Input.GetMouseButtonDown(0) && EventSystem.current != null)
+        {
+            if (EventSystem.current.IsPointerOverGameObject())
+            {
+                return; // 鼠标在UI上，不执行任何拖拽逻辑
+            }
+        }
 
         if (Input.GetMouseButtonDown(0))
         {
-            _isDragging = true;
-            _dragStart = mousePos;
-            DrawLine(true, _dragStart, _dragStart);
+            data.interactionData.isDragging = true;
+            data.interactionData.dragStartPos = mousePos;
         }
 
-        if (_isDragging)
+        if (data.interactionData.isDragging)
         {
-            if (_dragLine != null)
-                _dragLine.SetPosition(1, mousePos);
-
+            data.interactionData.dragEndPos = mousePos;
             if (Input.GetMouseButtonUp(0))
             {
-                _isDragging = false;
-                DrawLine(false, Vector2.zero, Vector2.zero);
-
-                Vector2 velocity = (_dragStart - mousePos) * GameConfig.universeConfig.launchForce;
+                data.interactionData.isDragging = false;
+                data.interactionData.dragEndPos = mousePos;
+                DVector2 velocity = (data.interactionData.dragStartPos - mousePos) * GameConfig.universeConfig.launchForce;
                 SpawnRandomAstro(mousePos, velocity);
             }
         }
@@ -75,46 +60,40 @@ public class PlayerController
 
     private void HandleKeyboardInput()
     {
-        if (_universeGen == null) return;
-        if (_mainCamera == null) _mainCamera = Camera.main;
-        float h = _mainCamera.orthographicSize;
+        if (universeGen == null) 
+            return;
+        if (mainCamera == null) 
+            mainCamera = Camera.main;
+
+        float h = mainCamera.orthographicSize;
 
         // 生成稳定的模拟天体系统
         if (Input.GetKeyDown(KeyCode.Alpha1)) 
-            _universeGen.LoadBinaryStars(h);
+            universeGen.LoadBinaryStars(h);
         if (Input.GetKeyDown(KeyCode.Alpha2))
-            _universeGen.LoadStarSystem(h);
+            universeGen.LoadStarSystem(h);
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+            universeGen.LoadThreeBodyFigure8(h);
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+            universeGen.LoadSunEarthMoon(h);
 
         // 重置/清空
         if (Input.GetKeyDown(KeyCode.R))
-            _data.ClearAll();
+            data.universeData.ClearAll();
     }
 
-    private Vector2 GetWorldMousePos()
+    private DVector2 GetWorldMousePos()
     {
         Vector3 mouseScreenPos = Input.mousePosition;
-        Vector3 worldPos = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
-        return new Vector2(worldPos.x, worldPos.y);
+        Vector3 worldPos = mainCamera.ScreenToWorldPoint(mouseScreenPos);
+        return new DVector2(worldPos.x, worldPos.y);
     }
 
-    private void DrawLine(bool active, Vector2 startPos, Vector2 endPos)
+    private void SpawnRandomAstro(DVector2 pos, DVector2 vel)
     {
-        if (_dragLine == null)
+        if (ProtoDB.ProtoSet.Count == 0)
             return;
-        if (_dragLine.enabled != active)
-            _dragLine.enabled = active;
-        if (active)
-        {
-            _dragLine.SetPosition(0, startPos);
-            _dragLine.SetPosition(1, endPos);
-        }
-    }
-
-    private void SpawnRandomAstro(Vector2 pos, Vector2 vel)
-    {
-        if (_protoSet.astroProtoList.Count == 0)
-            return;
-        var proto = _protoSet.astroProtoList[Random.Range(0, _protoSet.astroProtoList.Count)];
-        _data.CreateAstro(proto, pos, vel, Time.time);
+        int protoIndex = Random.Range(0, ProtoDB.ProtoSet.Count);
+        data.universeData.CreateAstro(protoIndex, pos, vel, data.clock.totalTicks);
     }
 }

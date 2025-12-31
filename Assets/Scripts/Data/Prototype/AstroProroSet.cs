@@ -6,36 +6,57 @@ using UnityEngine;
 /// AstroProroSet：
 /// </summary>
 [CreateAssetMenu(fileName = "AstroProtoSet", menuName = "NBody/AstroProtoSet")]
-public class AstroProtoSet : ScriptableObject, ISerializationCallbackReceiver
+public class AstroProtoSet : ScriptableObject
 {
     // 所有的天体配置原型
-    public List<AstroProto> astroProtoList;
+    [SerializeField]
+    private AstroProto[] astroProtos;
 
     private Dictionary<int, AstroProto> astroProtoIdMap;
 
-    public void OnBeforeSerialize() { }
+    private void OnEnable()
+    {
+        InitMap();
+    }
 
-    public void OnAfterDeserialize()
+    private void OnValidate()
+    {
+        InitMap();
+    }
+
+    public int Count => astroProtos.Length;
+
+    private void InitMap()
     {
         astroProtoIdMap = new Dictionary<int, AstroProto>();
-        for (int i = 0; i < astroProtoList.Count; ++i)
+
+        if (astroProtos == null) 
+            return;
+
+        foreach (var proto in astroProtos)
         {
-            if (!astroProtoIdMap.ContainsKey(astroProtoList[i].id))
-                astroProtoIdMap[astroProtoList[i].id] = astroProtoList[i];
+            if (proto != null && !astroProtoIdMap.ContainsKey(proto.id))
+            {
+                astroProtoIdMap.Add(proto.id, proto);
+            }
         }
     }
 
     // 根据id查询对应天体原型
     public AstroProto Select(int id)
     {
-        if (astroProtoIdMap == null)
-            return null;
-
         if (astroProtoIdMap.TryGetValue(id, out var proto))
-        {
             return proto;
-        }
 
         return null;
+    }
+
+    // 索引器，通过AstroProtoSet[i]来访问对应原型
+    public AstroProto this[int index]
+    {
+        get
+        {
+            return astroProtos[index];
+        }
     }
 }

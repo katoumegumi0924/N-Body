@@ -6,21 +6,22 @@ using UnityEngine.Rendering.Universal;
 /// </summary>
 public class CameraController
 {
-    private Camera _camera;
+    private Camera camera;
 
-    private float _lastSize;
-    private float _lastAspect;
+    private float lastSize;
+    private float lastAspect;
 
     public Vector2 screenBounds { get; private set; }
 
-    public void Init(Camera camera)
+    public void Init(Camera _camera)
     {
-        _camera = camera;
+        camera = _camera;
+        CheckAndRefreshBounds();
     }
 
     public void Free()
     {
-        _camera = null;
+        camera = null;
     }
 
     public void OnUpdate()
@@ -30,24 +31,24 @@ public class CameraController
 
     private void CalculateBounds()
     {
-        float h = _lastSize;
-        float w = h * _lastAspect;
+        float h = lastSize;
+        float w = h * lastAspect;
 
         screenBounds = new Vector2(w, h);
     }
 
     private void CheckAndRefreshBounds()
     {
-        float currentSize = _camera.orthographicSize;
-        float currentAspect = _camera.aspect;
+        float currentSize = camera.orthographicSize;
+        float currentAspect = camera.aspect;
 
-        bool sizeChanged = Mathf.Abs(currentSize - _lastSize) > 0.001f;
-        bool aspectChanged = Mathf.Abs(currentAspect - _lastAspect) > 0.001f;
+        bool sizeChanged = Mathf.Abs(currentSize - lastSize) > 0.001f;
+        bool aspectChanged = Mathf.Abs(currentAspect - lastAspect) > 0.001f;
 
         if (sizeChanged || aspectChanged)
         {
-            _lastSize = currentSize;
-            _lastAspect = currentAspect;
+            lastSize = currentSize;
+            lastAspect = currentAspect;
 
             CalculateBounds();
         }

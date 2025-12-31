@@ -5,30 +5,34 @@ using UnityEngine;
 /// </summary>
 public class GameData
 {
-    public AstroData astroData;
+    public UniverseData universeData;
+    public InteractionData interactionData;
+    public SimulationClock clock;
 
     public void Init()
     {
-        astroData = new AstroData();
-        astroData.Init();
+        universeData = new UniverseData();
+        universeData.Init();
+
+        interactionData = new InteractionData();
+        interactionData.Reset();
+
+        clock = new SimulationClock();
+        clock.Init();
     }
 
     public void Free()
     {
-        if (astroData != null)
+        if (universeData != null)
         {
-            astroData.Free();
-            astroData = null;
+            universeData.Free();
+            universeData = null;
         }
-    }
 
-    public void AddAstro(AstroProto proto, Vector2 pos, Vector2 vel, float currentTime, float massOverride = -1)
-    {
-        astroData.CreateAstro(proto, pos, vel, currentTime, massOverride);
-    }
-
-    public void RemoveAstro(int id)
-    {
-        astroData.FreeAstro(id);
+        if (clock != null)
+        {
+            clock.Free();
+            clock = null;
+        }
     }
 }

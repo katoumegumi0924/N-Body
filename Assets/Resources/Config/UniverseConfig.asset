@@ -21,3 +21,5 @@ MonoBehaviour:
   spawnImmunityTime: 0.5
   minDebrisSpeed: 50
   maxDebrisSpeed: 100
+  physicsStep: 0.002
+  maxStepsPerFrame: 1000

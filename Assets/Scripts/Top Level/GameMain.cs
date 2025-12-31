@@ -5,9 +5,9 @@ using UnityEngine;
 /// </summary>
 public class GameMain : MonoBehaviour
 {
-    private GameData gameData;
-    private GameLogic gameLogic;
-    private GameRender gameRender;
+    public GameData gameData;
+    public GameLogic gameLogic;
+    public GameModel gameModel;
 
     public void Init()
     {
@@ -15,19 +15,18 @@ public class GameMain : MonoBehaviour
         gameData.Init();
 
         gameLogic = new GameLogic();
-        gameLogic.Init(gameData.astroData, GameConfig.gameResourcesConfig.protoSet);
+        gameLogic.Init(gameData);
 
-        gameRender = new GameRender();
-        gameRender.Init(gameData.astroData, GameConfig.gameResourcesConfig.protoSet, 
-                         GameConfig.gameResourcesConfig.astroMesh, GameConfig.gameResourcesConfig.astroMaterial);
+        gameModel = new GameModel();
+        gameModel.Init(gameData);
     }
 
     public void Free()
     {
-        if (gameRender != null)
+        if (gameModel != null)
         {
-            gameRender.Free();
-            gameRender = null;
+            gameModel.Free();
+            gameModel = null;
         }
 
         if (gameLogic != null)
@@ -46,7 +45,7 @@ public class GameMain : MonoBehaviour
     private void Update()
     {
         gameLogic.OnUpdate();
-        gameRender.OnUpdate();
+        gameModel.OnUpdate();
     }
 
     private void FixedUpdate()

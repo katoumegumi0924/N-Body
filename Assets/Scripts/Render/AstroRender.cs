@@ -8,54 +8,50 @@ using UnityEngine.UI;
 /// </summary>
 public class AstroRender
 {
-    private AstroData _data;
-    private AstroProtoSet _protoSet;
-
-    private Mesh _mesh;
-    private Material _material;
+    private AstroProtoSet protoSet;
+    private Mesh mesh;
+    private Material material;
 
     private const int BATCH_SIZE = 1023;
-    private Matrix4x4[] _matrices;
-    private Vector4[] _colors;
-    private MaterialPropertyBlock _mpb;
+    private Matrix4x4[] matrices;
+    private Vector4[] colors;
+    private MaterialPropertyBlock mpb;
 
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
-    public void Init(AstroData data, AstroProtoSet protoSet, Mesh mesh, Material material)
+    public void Init()
     {
-        _data = data;
-        _protoSet = protoSet;
-        _mesh = mesh;
-        _material = material;
+        protoSet = ProtoDB.ProtoSet;
+        mesh = GameConfig.gameResourcesConfig.astroMesh;
+        material = GameConfig.gameResourcesConfig.astroMaterial;
 
-        _matrices = new Matrix4x4[BATCH_SIZE];
-        _colors = new Vector4[BATCH_SIZE];
-        _mpb = new MaterialPropertyBlock();
+        matrices = new Matrix4x4[BATCH_SIZE];
+        colors = new Vector4[BATCH_SIZE];
+        mpb = new MaterialPropertyBlock();
 
-        _mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 20000f);
+        mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 20000f);
     }
 
     public void Free()
     {
-        _data = null;
-        _protoSet = null;
-        _mesh = null;
-        _material = null;
-        _matrices = null;
-        _colors = null;
-        _mpb = null;
+        protoSet = null;
+        mesh = null;
+        material = null;
+        matrices = null;
+        colors = null;
+        mpb = null;
     }
 
-    public void RenderTick()
+    public void RenderTick(GameData data)
     {
-        if (_mesh == null || _material == null)
+        if (mesh == null || material == null)
             return;
-        _mpb.Clear();
+        mpb.Clear();
 
-        var pool = _data.pool;
-        int cursor = _data.cursor;
+        var pool = data.universeData.pool;
+        int cursor = pool.cursor;
         int batchCount = 0;
-        float time = Time.time;
+        long currentTick = data.clock.totalTicks;
 
         // 遍历数据进行渲染
         for (int i = 1; i < cursor; ++i)
@@ -63,20 +59,21 @@ public class AstroRender
             if (!pool[i].active)
                 continue;
             ref var astro = ref pool[i];
-            AstroProto proto = _protoSet.Select(astro.protoId);
+            AstroProto proto = protoSet.Select(astro.protoId);
             if (proto == null)
                 continue;
 
             // 根据存活时间计算天体颜色
-            float age = time - astro.birthTime;
+            long ageTick = currentTick - astro.birthTick;
+            float age = (float)data.clock.ToSeconds(ageTick);
             float t = Mathf.Clamp01(age / proto.evolutionTime);
 
             // 需要优化 
-            _colors[batchCount] = proto.colorRange.Evaluate(t);
+            colors[batchCount] = proto.colorRange.Evaluate(t);
 
-            Vector3 pos = new Vector3(astro.position.x, astro.position.y, 0);
+            Vector3 pos = (Vector3)astro.position;
             Vector3 scale = Vector3.one * (astro.radius * 2.0f);
-            _matrices[batchCount] = Matrix4x4.TRS(pos, Quaternion.identity, scale);
+            matrices[batchCount] = Matrix4x4.TRS(pos, Quaternion.identity, scale);
 
             batchCount++;
 
@@ -97,7 +94,7 @@ public class AstroRender
     {
         if (count <= 0)
             return;
-        _mpb.SetVectorArray(BaseColorId, _colors);
-        Graphics.DrawMeshInstanced(_mesh, 0, _material, _matrices, count, _mpb);
+        mpb.SetVectorArray(BaseColorId, colors);
+        Graphics.DrawMeshInstanced(mesh, 0, material, matrices, count, mpb);
     }
 }
