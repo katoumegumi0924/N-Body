@@ -72,7 +72,7 @@ public class SimulationClock
 
     public void SpeedUp()
     {
-        stepIndex = Mathf.Min(stepIndex + 1, scaleSteps.Length - 1);
+        stepIndex = System.Math.Min(stepIndex + 1, scaleSteps.Length - 1);
         timeScale = scaleSteps[stepIndex];
         if (timeScale > 0)
             lastNonZeroScale = timeScale;

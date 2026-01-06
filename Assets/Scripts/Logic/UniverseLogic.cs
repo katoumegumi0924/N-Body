@@ -49,15 +49,15 @@ public class UniverseLogic
         }
     }
 
-    public void LogicTick(GameData data, double deltaTime, Vector2 screenBounds)
+    public void LogicTick(GameData data, double deltaTime)
     {
-        CalculatePosition(data, deltaTime, screenBounds);
+        CalculatePosition(data, deltaTime, data.universeData.worldBounds);
         HandleCollision(data);
         PostTickProcess(data);
     }
 
     // 计算引力和速度
-    private void CalculatePosition(GameData data, double deltaTime, Vector2 screenBounds)
+    private void CalculatePosition(GameData data, double deltaTime, WorldBounds worldBounds)
     {
         var pool = data.universeData.pool;
         int cursor = data.universeData.pool.cursor;
@@ -110,33 +110,36 @@ public class UniverseLogic
 
             astro.velocity += acceleration * deltaTime;
 
-            astro.position += astro.velocity * deltaTime;
+            astro.InternelUpdate(deltaTime);
+            // astro.position += astro.velocity * deltaTime;
 
             // 边界处理
-            float xLimit = screenBounds.x - astro.radius;
-            float yLimit = screenBounds.y - astro.radius;
-            if (astro.position.x > xLimit)
+            double maxX = worldBounds.MaxX - (double)astro.radius;
+            double minX = worldBounds.MinX + (double)astro.radius;
+            if (astro.position.x > maxX)
             {
-                astro.position.x = xLimit;
+                astro.position.x = maxX;
                 if (astro.velocity.x > 0)
                     astro.velocity.x = -astro.velocity.x;
             }
-            else if (astro.position.x < -xLimit)
+            else if (astro.position.x < minX)
             {
-                astro.position.x = -xLimit;
+                astro.position.x = minX;
                 if (astro.velocity.x < 0)
                     astro.velocity.x = -astro.velocity.x;
             }
-            
-            if (astro.position.y > yLimit)
+
+            double maxY = worldBounds.MaxY - (double)astro.radius;
+            double minY = worldBounds.MinY + (double)astro.radius;
+            if (astro.position.y > maxY)
             {
-                astro.position.y = yLimit;
+                astro.position.y = maxY;
                 if (astro.velocity.y > 0)
                     astro.velocity.y = -astro.velocity.y;
             }
-            else if (astro.position.y < -yLimit)
+            else if (astro.position.y < minY)
             {
-                astro.position.y = -yLimit;
+                astro.position.y = minY;
                 if (astro.velocity.y < 0)
                     astro.velocity.y = -astro.velocity.y;
             }
@@ -249,6 +252,7 @@ public class UniverseLogic
             velocity = major.velocity,
             totalMass = debrisTotalMass,
             count = Random.Range(5, 10),
+            protoId = debrisTotalMass > 200 ? 1 : 0, // 碎片总质量超过200，炸出行星
             offset = major.radius
         });
 
@@ -329,8 +333,7 @@ public class UniverseLogic
                     DVector2 spawnPos = request.center + dir * request.offset;
                     DVector2 spawnVel = request.velocity + dir * Random.Range(GameConfig.universeConfig.minDebrisSpeed, GameConfig.universeConfig.maxDebrisSpeed);
 
-                    // 需要优化 生成不同原型的天体，现在写死为了小行星
-                    data.universeData.CreateAstro(0, spawnPos, spawnVel, data.clock.totalTicks, massPerDebris);
+                    data.universeData.CreateAstro(request.protoId, spawnPos, spawnVel, data.clock.totalTicks, massPerDebris);
                 }
             }
             pendingExplosion.Clear();
@@ -344,7 +347,7 @@ public struct ExplosionRequest
     public DVector2 center;            // 爆炸中心位置
     public DVector2 velocity;          // 爆炸赋予的初速度
     public float totalMass;            // 碎片总质量
-    // public int protoId;             // 碎片原型id
+    public int protoId;                // 碎片原型id
     public int count;                  // 碎片个数
     public float offset;               // 离爆炸中心的偏移距离
 }

@@ -6,51 +6,73 @@ using UnityEngine.Rendering.Universal;
 /// </summary>
 public class CameraController
 {
-    private Camera camera;
+    private const float ZOOM_SPEED = 0.5f;
+    private const float MOVE_SPEED = 2.0f;
 
-    private float lastSize;
-    private float lastAspect;
-
-    public Vector2 screenBounds { get; private set; }
-
-    public void Init(Camera _camera)
+    public void Init(GameData gameData)
     {
-        camera = _camera;
-        CheckAndRefreshBounds();
+        Camera mainCam = Camera.main;
+
+        // 根据屏幕初始化边界
+        float h = mainCam.orthographicSize * 2f;
+        float w = h * mainCam.aspect;
+        gameData.universeData.worldBounds = new WorldBounds { width = w, height = h };
+
+        gameData.cameraState.zoom = mainCam.orthographicSize;
+        gameData.cameraState.position = Vector2.zero;
     }
 
     public void Free()
     {
-        camera = null;
+
     }
 
-    public void OnUpdate()
+    public void OnUpdate(GameData gameData, float deltaTime)
     {
-        CheckAndRefreshBounds();
+        UpdateCamera(gameData, deltaTime);
     }
 
-    private void CalculateBounds()
+    public void UpdateCamera(GameData gameData, float deltaTime)
     {
-        float h = lastSize;
-        float w = h * lastAspect;
+        ref var state = ref gameData.cameraState;
 
-        screenBounds = new Vector2(w, h);
-    }
-
-    private void CheckAndRefreshBounds()
-    {
-        float currentSize = camera.orthographicSize;
-        float currentAspect = camera.aspect;
-
-        bool sizeChanged = Mathf.Abs(currentSize - lastSize) > 0.001f;
-        bool aspectChanged = Mathf.Abs(currentAspect - lastAspect) > 0.001f;
-
-        if (sizeChanged || aspectChanged)
+        // 处理缩放
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (System.Math.Abs(scroll) > 0.01f)
         {
-            lastSize = currentSize;
-            lastAspect = currentAspect;
+            state.zoom -= scroll * state.zoom * ZOOM_SPEED;
+            state.zoom = System.Math.Clamp(state.zoom, 0.1f, 1000f);
+        }
 
-            CalculateBounds();
+        // 处理平移
+        Vector2 moveDir = Vector2.zero;
+        if (Input.GetKey(KeyCode.W))
+        {
+            moveDir.y += 1;
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            moveDir.y -= 1;
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            moveDir.x -= 1;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            moveDir.x += 1;
+        }
+
+        if (moveDir != Vector2.zero)
+        {
+            float speed = state.zoom * MOVE_SPEED;
+            state.position += moveDir * (speed * deltaTime);
+        }
+
+        // z键重置相机状态
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            state.Reset();
         }
     }
 }

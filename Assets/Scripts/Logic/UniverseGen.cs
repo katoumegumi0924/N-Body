@@ -23,7 +23,7 @@ public class UniverseGen
     {
         ResetScene();
 
-        float radius = screenHeight * 0.5f; // 轨道半径
+        float radius = screenHeight * 0.4f; // 轨道半径
         float starMass = 2000f;
 
         float speed = Mathf.Sqrt((GameConfig.universeConfig.G * starMass) / (4.0f * radius));
@@ -134,7 +134,7 @@ public class UniverseGen
 
     private void CreateAstro(DVector2 pos, DVector2 vel, float mass, float visualRadius, int protoIndex)
     {
-        if ( ProtoDB.ProtoSet.Count == 0)
+        if (ProtoDB.ProtoSet.Count == 0)
             return;
 
         if (protoIndex < 0 || protoIndex >= ProtoDB.ProtoSet.Count)

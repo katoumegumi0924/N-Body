@@ -7,11 +7,14 @@ using UnityEngine;
 public class UniverseData
 {
     public DataPool<AstroData> pool;
+    public WorldBounds worldBounds;
 
     public void Init()
     {
         pool = new DataPool<AstroData>();
         pool.Reset();
+
+        worldBounds.Reset();
     }
 
     public void Free()
@@ -20,7 +23,9 @@ public class UniverseData
         {
             pool.Free();
             pool = null;
-        }     
+        }
+
+        worldBounds.Reset();
     }
 
     // 创建天体
@@ -41,5 +46,21 @@ public class UniverseData
     public void ClearAll()
     {
         pool.ClearAll();
+    }
+}
+
+public struct WorldBounds
+{
+    public double width;
+    public double height;
+
+    public double MinX => -width * 0.5;
+    public double MaxX => width * 0.5;
+    public double MinY => -height * 0.5;
+    public double MaxY => height * 0.5;
+
+    public void Reset()
+    {
+        this = default;
     }
 }

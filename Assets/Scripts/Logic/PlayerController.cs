@@ -6,20 +6,18 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class PlayerController
 {
-    private GameData data;
+    private GameData gameData;
     private UniverseGen universeGen;
-    private Camera mainCamera;
 
     public void Init(GameData _data, UniverseGen _universeGen)
     {
-        data = _data;
+        gameData = _data;
         universeGen = _universeGen;
-        mainCamera = Camera.main;
     }
 
     public void Free()
     {
-        data = null;
+        gameData = null;
     }
 
     public void OnUpdate()
@@ -41,18 +39,18 @@ public class PlayerController
 
         if (Input.GetMouseButtonDown(0))
         {
-            data.interactionData.isDragging = true;
-            data.interactionData.dragStartPos = mousePos;
+            gameData.interactionData.isDragging = true;
+            gameData.interactionData.dragStartPos = mousePos;
         }
 
-        if (data.interactionData.isDragging)
+        if (gameData.interactionData.isDragging)
         {
-            data.interactionData.dragEndPos = mousePos;
+            gameData.interactionData.dragEndPos = mousePos;
             if (Input.GetMouseButtonUp(0))
             {
-                data.interactionData.isDragging = false;
-                data.interactionData.dragEndPos = mousePos;
-                DVector2 velocity = (data.interactionData.dragStartPos - mousePos) * GameConfig.universeConfig.launchForce;
+                gameData.interactionData.isDragging = false;
+                gameData.interactionData.dragEndPos = mousePos;
+                DVector2 velocity = (gameData.interactionData.dragStartPos - mousePos) * GameConfig.universeConfig.launchForce;
                 SpawnRandomAstro(mousePos, velocity);
             }
         }
@@ -62,10 +60,8 @@ public class PlayerController
     {
         if (universeGen == null) 
             return;
-        if (mainCamera == null) 
-            mainCamera = Camera.main;
 
-        float h = mainCamera.orthographicSize;
+        float h = (float)gameData.universeData.worldBounds.height;
 
         // 生成稳定的模拟天体系统
         if (Input.GetKeyDown(KeyCode.Alpha1)) 
@@ -79,13 +75,13 @@ public class PlayerController
 
         // 重置/清空
         if (Input.GetKeyDown(KeyCode.R))
-            data.universeData.ClearAll();
+            gameData.universeData.ClearAll();
     }
 
     private DVector2 GetWorldMousePos()
     {
         Vector3 mouseScreenPos = Input.mousePosition;
-        Vector3 worldPos = mainCamera.ScreenToWorldPoint(mouseScreenPos);
+        Vector3 worldPos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
         return new DVector2(worldPos.x, worldPos.y);
     }
 
@@ -94,6 +90,6 @@ public class PlayerController
         if (ProtoDB.ProtoSet.Count == 0)
             return;
         int protoIndex = Random.Range(0, ProtoDB.ProtoSet.Count);
-        data.universeData.CreateAstro(protoIndex, pos, vel, data.clock.totalTicks);
+        gameData.universeData.CreateAstro(protoIndex, pos, vel, gameData.clock.totalTicks);
     }
 }

@@ -6,19 +6,23 @@ using UnityEngine;
 public class GameData
 {
     public UniverseData universeData;
-    public InteractionData interactionData;
     public SimulationClock clock;
+    public InteractionData interactionData;
+    public CameraState cameraState;
 
     public void Init()
     {
         universeData = new UniverseData();
         universeData.Init();
 
+        clock = new SimulationClock();
+        clock.Init();
+
         interactionData = new InteractionData();
         interactionData.Reset();
 
-        clock = new SimulationClock();
-        clock.Init();
+        cameraState = new CameraState();
+        cameraState.Reset();
     }
 
     public void Free()
@@ -34,5 +38,8 @@ public class GameData
             clock.Free();
             clock = null;
         }
+
+        interactionData.Reset();
+        cameraState.Reset();
     }
 }

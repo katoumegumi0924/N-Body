@@ -51,7 +51,7 @@ public struct AstroData : IPoolElement
         this = default;
     }
 
-    public void InternelUpdate(float deltaTime)
+    public void InternelUpdate(double deltaTime)
     {
         if (!active)
             return;

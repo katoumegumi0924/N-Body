@@ -68,7 +68,6 @@ public class AstroRender
             float age = (float)data.clock.ToSeconds(ageTick);
             float t = Mathf.Clamp01(age / proto.evolutionTime);
 
-            // 需要优化 
             colors[batchCount] = proto.colorRange.Evaluate(t);
 
             Vector3 pos = (Vector3)astro.position;
