@@ -7,49 +7,49 @@ using UnityEngine;
 public class UniverseLogic
 {
     // 暂存爆炸请求
-    private List<ExplosionRequest> pendingExplosion = new List<ExplosionRequest>();
+    private List<ExplosionRequest> _delay_explosion_list = new List<ExplosionRequest>();
     // 暂存销毁请求
-    private List<int> pendingFree = new List<int>();
+    private List<int> _delay_remove_list = new List<int>();
 
     private readonly float G = GameConfig.universeConfig.G;
 
     public void Init()
     {
-        if (pendingExplosion == null)
+        if (_delay_explosion_list == null)
         {
-            pendingExplosion = new List<ExplosionRequest>();
+            _delay_explosion_list = new List<ExplosionRequest>();
         }
         else
         {
-            pendingExplosion.Clear();
+            _delay_explosion_list.Clear();
         }
 
-        if (pendingFree == null)
+        if (_delay_remove_list == null)
         {
-            pendingFree = new List<int>();
+            _delay_remove_list = new List<int>();
         }
         else
         {
-            pendingFree.Clear();
+            _delay_remove_list.Clear();
         }
     }
 
     public void Free()
     {
-        if (pendingExplosion != null)
+        if (_delay_explosion_list != null)
         {
-            pendingExplosion.Clear();
-            pendingExplosion = null;
+            _delay_explosion_list.Clear();
+            _delay_explosion_list = null;
         }
 
-        if (pendingFree != null)
+        if (_delay_remove_list != null)
         {
-            pendingFree.Clear();
-            pendingFree = null;
+            _delay_remove_list.Clear();
+            _delay_remove_list = null;
         }
     }
 
-    public void LogicTick(GameData data, double deltaTime)
+    public void LogicTick(GameData data, float deltaTime)
     {
         CalculatePosition(data, deltaTime, data.universeData.worldBounds);
         HandleCollision(data);
@@ -57,7 +57,7 @@ public class UniverseLogic
     }
 
     // 计算引力和速度
-    private void CalculatePosition(GameData data, double deltaTime, WorldBounds worldBounds)
+    private void CalculatePosition(GameData data, float deltaTime, WorldBounds worldBounds)
     {
         var pool = data.universeData.pool;
         int cursor = data.universeData.pool.cursor;
@@ -65,9 +65,9 @@ public class UniverseLogic
         // 重置天体所受引力
         for (int i = 1; i < cursor; ++i)
         {
-            if (pool[i].active)
+            if (pool[i].id == i)
             {
-                pool[i].force = new DVector2(0, 0);
+                pool[i].force = Vector2.zero;
        
             }
         }
@@ -75,24 +75,25 @@ public class UniverseLogic
         // 两层循环计算所有天体引力
         for (int i = 1; i < cursor; ++i)
         {
-            if (!pool[i].active)
+            if (pool[i].id != i)
                 continue;     
             for (int j = i + 1; j < cursor; ++j)
             {
-                if (!pool[j].active)
+                if (pool[j].id != j)
                     continue;
 
                 ref var astroA = ref pool[i];
                 ref var astroB = ref pool[j];
 
-                DVector2 dir = astroB.position - astroA.position;
-                double distSqr = dir.SqrMagnitude;
-                double dist = System.Math.Sqrt(distSqr);
+                Vector2 dir = astroB.position - astroA.position;
+                float distSqr = dir.sqrMagnitude;
+                float dist = Mathf.Sqrt(distSqr);
 
                 // 防止除零
                 distSqr = distSqr < 0.01f ? 0.1f : distSqr;
+                dist = dist < 0.01f ? 0.1f : dist;
                 // 引力计算公式 F = G * (m1 * m2) / r^3 * dir;
-                DVector2 forceVec = (G * (double)astroA.mass * (double)astroB.mass / (distSqr * dist)) * dir;
+                Vector2 forceVec = (G * astroA.mass * astroB.mass / (distSqr * dist)) * dir;
 
                 astroA.force += forceVec;
                 astroB.force -= forceVec;
@@ -102,20 +103,18 @@ public class UniverseLogic
         // 计算加速度，处理移动
         for (int i = 1; i < cursor; ++i)
         {
-            if (!pool[i].active)
+            if (pool[i].id != i)
                 continue;
 
             ref var astro = ref pool[i];
-            DVector2 acceleration = astro.force * (double)astro.massInv;
 
+            Vector2 acceleration = astro.force * astro.massInv;
             astro.velocity += acceleration * deltaTime;
-
             astro.InternelUpdate(deltaTime);
-            // astro.position += astro.velocity * deltaTime;
 
             // 边界处理
-            double maxX = worldBounds.MaxX - (double)astro.radius;
-            double minX = worldBounds.MinX + (double)astro.radius;
+            float maxX = worldBounds.maxX - astro.radius;
+            float minX = worldBounds.minX + astro.radius;
             if (astro.position.x > maxX)
             {
                 astro.position.x = maxX;
@@ -129,8 +128,8 @@ public class UniverseLogic
                     astro.velocity.x = -astro.velocity.x;
             }
 
-            double maxY = worldBounds.MaxY - (double)astro.radius;
-            double minY = worldBounds.MinY + (double)astro.radius;
+            float maxY = worldBounds.maxY - astro.radius;
+            float minY = worldBounds.minY + astro.radius;
             if (astro.position.y > maxY)
             {
                 astro.position.y = maxY;
@@ -151,51 +150,45 @@ public class UniverseLogic
         var pool = data.universeData.pool;
         int cursor = data.universeData.pool.cursor;
 
-        long immunityTicks = (long)(GameConfig.universeConfig.spawnImmunityTime * 10_000_000);
-
         for (int i = 1; i < cursor; ++i)
         {
-            if (!pool[i].active || data.clock.totalTicks < pool[i].birthTick + immunityTicks)
+            if (pool[i].id != i)
                 continue;
             for (int j = i + 1; j < cursor; ++j)
             {
-                // 再次检查pool[i]，可能在上一次循环中被吞噬或销毁
-                if (!pool[i].active)
-                    break;
-
-                if (!pool[j].active || data.clock.totalTicks < pool[j].birthTick + immunityTicks)
+                if (pool[j].id != j)
                     continue;
 
                 ref var astroA = ref pool[i];
                 ref var astroB = ref pool[j];
 
-                DVector2 dir = astroB.position - astroA.position;
-                double distSqr = dir.SqrMagnitude;
+                Vector2 dir = astroB.position - astroA.position;
+                float distSqr = dir.sqrMagnitude;
                 float radiusSum = astroA.radius + astroB.radius;
                 if (distSqr < radiusSum * radiusSum)
                 {
                     // 处理碰撞时保证大质量天体在前
                     if (astroA.mass > astroB.mass)
-                        ProcessCollision(ref astroA, ref astroB);
+                        ProcessCollision(data, ref astroA, ref astroB);
                     else
-                        ProcessCollision(ref astroB, ref astroA);
+                        ProcessCollision(data, ref astroB, ref astroA);
                 }    
             }
         }
     }
 
-    private void ProcessCollision(ref AstroData major, ref AstroData minor)
+    private void ProcessCollision(GameData data, ref AstroData major, ref AstroData minor)
     {
         float massRatio = major.mass * minor.massInv;
         // 质量悬殊，吞噬
         if (massRatio > GameConfig.universeConfig.swallowThreshold)
         {
-            MergeAstro(ref major, ref minor);
+            MergeAstro(data, ref major, ref minor);
         }
         // 两个大质量天体，融合 分裂
         else if (major.mass > GameConfig.universeConfig.hugeMass && minor.mass > GameConfig.universeConfig.hugeMass)
         {
-            MergeAndExplode(ref major, ref minor);
+            MergeAndExplode(data, ref major, ref minor);
         }
         // 两个小质量天体，非完全弹性碰撞
         else
@@ -204,139 +197,141 @@ public class UniverseLogic
         }
     }
 
-    private void MergeAstro(ref AstroData major, ref AstroData minor)
+    private void MergeAstro(GameData data, ref AstroData major, ref AstroData minor)
     {
-        double m1 = (double)major.mass;
-        double m2 = (double)minor.mass;
-        double totalMass = m1 + m2;
+        float m1 = major.mass;
+        float m2 = minor.mass;
+        float totalMass = m1 + m2;
+        float maxRadius = data.universeData.MAX_RADIUS;
 
         // 动量守恒计算新速度
-        DVector2 newVel = (m1 * major.velocity + m2 * minor.velocity) / totalMass;
+        Vector2 newVel = (m1 * major.velocity + m2 * minor.velocity) / totalMass;
 
         // 更新major
         major.velocity = newVel;
-        major.mass = (float)totalMass;
-        major.massInv = (float)(1.0f / totalMass);
-        major.radius = Mathf.Sqrt(major.mass / major.density);
+        major.mass = totalMass;
+        major.massInv = 1.0f / totalMass;
+        major.radius = Mathf.Sqrt(major.mass / major.density) > maxRadius ? maxRadius : Mathf.Sqrt(major.mass / major.density);
 
         // 销毁minor 不应该在循环中销毁
-        pendingFree.Add(minor.ID);
+        _delay_remove_list.Add(minor.ID);
     }
 
-    private void MergeAndExplode(ref AstroData major, ref AstroData minor)
+    private void MergeAndExplode(GameData data, ref AstroData major, ref AstroData minor)
     {
-        double m1 = (double)major.mass;
-        double m2 = (double)minor.mass;
+        float m1 = major.mass;
+        float m2 = minor.mass;
+        float totalMass = m1 + m2;
+        float maxRadius = data.universeData.MAX_RADIUS;
 
-        double totalMass = m1 + m2;
         // 根据合并损耗率计算碎片质量与合并后质量
         float debrisTotalMass = (float)totalMass * GameConfig.universeConfig.lossRatio;
         float newMass = (float)totalMass - debrisTotalMass;
 
-        DVector2 newVel = (m1 * major.velocity + m2 * minor.velocity) / totalMass;
-        DVector2 centerPos = (major.position + minor.position) / 2;
+        Vector2 newVel = (m1 * major.velocity + m2 * minor.velocity) / totalMass;
+        Vector2 centerPos = (major.position + minor.position) * 0.5f;
 
         // 更新major
         major.position = centerPos;
         major.velocity = newVel;
         major.mass = newMass;
-        major.radius = Mathf.Sqrt(major.mass / major.density);
+        major.radius = Mathf.Sqrt(major.mass / major.density) > maxRadius ? maxRadius : Mathf.Sqrt(major.mass / major.density);
 
         // 销毁minor 不应该在循环中销毁
-        pendingFree.Add(minor.ID);
+        _delay_remove_list.Add(minor.ID);
 
         // 记录爆炸生成新天体的请求
-        pendingExplosion.Add(new ExplosionRequest()
+        _delay_explosion_list.Add(new ExplosionRequest()
         {
             center = centerPos,
             velocity = major.velocity,
             totalMass = debrisTotalMass,
             count = Random.Range(5, 10),
             protoId = debrisTotalMass > 200 ? 1 : 0, // 碎片总质量超过200，炸出行星
-            offset = major.radius
+            offset = major.radius * 1.35f
         });
 
     }
 
     private void NonFullyElasticCollide(ref AstroData major, ref AstroData minor)
     {
-        DVector2 dir = minor.position - major.position;
-        double distSqr = dir.SqrMagnitude;
-        double dist = System.Math.Sqrt(distSqr);
+        Vector2 dir = minor.position - major.position;
+        float distSqr = dir.sqrMagnitude;
+        float dist = Mathf.Sqrt(distSqr);
 
         if (dist < 0.01f)
             return;
 
-        DVector2 normal = dir / dist;
+        Vector2 normal = dir / dist;
 
         // 位置修正
-        double penetration = (double)major.radius + (double)minor.radius - dist;
+        float penetration = major.radius + minor.radius - dist;
         if (penetration > 0)
         {
-            double m1 = (double)major.mass;
-            double m2 = (double)minor.mass;
-            double totalMass = m1 + m2;
+            float m1 = major.mass;
+            float m2 = minor.mass;
+            float totalMass = m1 + m2;
 
             // 按质量反比分配移动量
-            double moveMajor = penetration * (m2 / totalMass);
-            double moveMinor = penetration * (m1 / totalMass);
+            float moveMajor = penetration * (m2 / totalMass);
+            float moveMinor = penetration * (m1 / totalMass);
 
             major.position -= normal * moveMajor;
             minor.position += normal * moveMinor;
         }
 
         // 计算minor的相对速度
-        DVector2 relativeVel = minor.velocity - major.velocity;
-        double velAlongNormal = DVector2.Dot(relativeVel, normal);
+        Vector2 relativeVel = minor.velocity - major.velocity;
+        float velAlongNormal = Vector2.Dot(relativeVel, normal);
         // 正在分离，不处理
         if (velAlongNormal > 0)
             return;
 
         // 非完全弹性碰撞
         // 使用平均弹性系数
-        double e = (double)(major.elasticityModulus + minor.elasticityModulus) * 0.5;
-        double j = -(1.0 + e) * velAlongNormal;
-        double invMassSum = (double)major.massInv + (double)minor.massInv;
+        float e = (major.elasticityCeof + minor.elasticityCeof) * 0.5f;
+        float j = -(1.0f + e) * velAlongNormal;
+        float invMassSum = major.massInv + minor.massInv;
         if (invMassSum > 0)
         {
-            j /= (double)major.massInv + (double)minor.massInv;
-            DVector2 impulse = j * normal;
+            j /= major.massInv + minor.massInv;
+            Vector2 impulse = j * normal;
 
-            major.velocity -= impulse * (double)major.massInv;
-            minor.velocity += impulse * (double)minor.massInv;
+            major.velocity -= impulse * major.massInv;
+            minor.velocity += impulse * minor.massInv;
         }
     }
 
     private void PostTickProcess(GameData data)
     {
         // 集中销毁
-        if (pendingFree.Count > 0)
+        if (_delay_remove_list.Count > 0)
         {
-            for (int i = 0; i < pendingFree.Count; ++i)
+            for (int i = 0; i < _delay_remove_list.Count; ++i)
             {
-                data.universeData.FreeAstro(pendingFree[i]);
+                data.universeData.FreeAstro(_delay_remove_list[i]);
             }
-            pendingFree.Clear();
+            _delay_remove_list.Clear();
         }
 
         // 集中创建
-        if (pendingExplosion.Count > 0)
+        if (_delay_explosion_list.Count > 0)
         {
-            for (int i = 0; i < pendingExplosion.Count; ++i)
+            for (int i = 0; i < _delay_explosion_list.Count; ++i)
             {
-                var request = pendingExplosion[i];
+                var request = _delay_explosion_list[i];
                 float massPerDebris = request.totalMass / request.count;
                 for (int j = 0; j < request.count; ++j)
                 {
                     Vector2 randomDir = Random.insideUnitCircle.normalized;
-                    DVector2 dir = new DVector2(randomDir.x, randomDir.y);
-                    DVector2 spawnPos = request.center + dir * request.offset;
-                    DVector2 spawnVel = request.velocity + dir * Random.Range(GameConfig.universeConfig.minDebrisSpeed, GameConfig.universeConfig.maxDebrisSpeed);
+                    Vector2 dir = new Vector2(randomDir.x, randomDir.y);
+                    Vector2 spawnPos = request.center + dir * request.offset;
+                    Vector2 spawnVel = request.velocity + dir * Random.Range(GameConfig.universeConfig.minDebrisSpeed, GameConfig.universeConfig.maxDebrisSpeed);
 
-                    data.universeData.CreateAstro(request.protoId, spawnPos, spawnVel, data.clock.totalTicks, massPerDebris);
+                    data.universeData.CreateAstro(request.protoId, spawnPos, spawnVel, data.universeTime.totalTicks, massPerDebris);
                 }
             }
-            pendingExplosion.Clear();
+            _delay_explosion_list.Clear();
         }
     }
 }
@@ -344,8 +339,8 @@ public class UniverseLogic
 // 暂存爆炸请求，防止在遍历过程中改变pool
 public struct ExplosionRequest
 {
-    public DVector2 center;            // 爆炸中心位置
-    public DVector2 velocity;          // 爆炸赋予的初速度
+    public Vector2 center;            // 爆炸中心位置
+    public Vector2 velocity;          // 爆炸赋予的初速度
     public float totalMass;            // 碎片总质量
     public int protoId;                // 碎片原型id
     public int count;                  // 碎片个数

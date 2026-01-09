@@ -6,23 +6,22 @@ using UnityEngine;
 public class GameData
 {
     public UniverseData universeData;
-    public SimulationClock clock;
-    public InteractionData interactionData;
-    public CameraState cameraState;
+    public SimulationTimeData universeTime;
 
     public void Init()
     {
         universeData = new UniverseData();
         universeData.Init();
 
-        clock = new SimulationClock();
-        clock.Init();
+        universeTime = new SimulationTimeData();
+        universeTime.Init();
+    }
 
-        interactionData = new InteractionData();
-        interactionData.Reset();
-
-        cameraState = new CameraState();
-        cameraState.Reset();
+    public void SetNew()
+    {
+        universeData.worldBounds.SetBounds(GameConfig.universeConfig.width, 
+                                           GameConfig.universeConfig.height, 
+                                           GameConfig.universeConfig.centerPos);
     }
 
     public void Free()
@@ -33,13 +32,10 @@ public class GameData
             universeData = null;
         }
 
-        if (clock != null)
+        if (universeTime != null)
         {
-            clock.Free();
-            clock = null;
+            universeTime.Free();
+            universeTime = null;
         }
-
-        interactionData.Reset();
-        cameraState.Reset();
     }
 }

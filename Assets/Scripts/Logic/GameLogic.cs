@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -7,7 +8,7 @@ public class GameLogic
 {
     private GameData gameData;
     private UniverseLogic universeLogic;
-    private PlayerController playerController;
+    public PlayerController playerController;
     private CameraController cameraController;
     private UniverseGen universeGen;
 
@@ -41,17 +42,17 @@ public class GameLogic
     public void GameTick(float deltaTime)
     {
         // 获取固定步长和最大步数
-        double pStep = GameConfig.universeConfig.physicsStep;
+        float pStep = GameConfig.universeConfig.physicsStep;
         int maxSteps = GameConfig.universeConfig.maxStepsPerFrame;
 
-        double dt = deltaTime * gameData.clock.timeScale;
+        double dt = deltaTime * gameData.universeTime.timeScale;
         accumulator += dt;
         int stepCount = 0;
         while (accumulator >= pStep)
-        { 
+        {
             // 推进Ticks
-            long ticksInStep = gameData.clock.ToTicks(pStep);
-            gameData.clock.totalTicks += ticksInStep;
+            long ticksInStep = gameData.universeTime.ToTicks(pStep);
+            gameData.universeTime.totalTicks += ticksInStep;
 
             // 执行核心物理逻辑
             universeLogic.LogicTick(gameData, pStep);
@@ -66,36 +67,12 @@ public class GameLogic
                 accumulator = 0;
                 break;
             }
-        }  
-    }
-
-    // 根据交互数据处理Button逻辑
-    private void HandleButtonClick()
-    {
-        if (gameData.interactionData.reqSpeedUp)
-        {
-            gameData.clock.SpeedUp();
-            gameData.interactionData.reqSpeedUp = false;
-        }
-
-        if (gameData.interactionData.reqSpeedDown)
-        {
-            gameData.clock.SpeedDown();
-            gameData.interactionData.reqSpeedDown = false;
-        }
-
-        if (gameData.interactionData.reqTogglePause)
-        {
-            gameData.clock.TogglePause();
-            gameData.interactionData.reqTogglePause = false;
         }
     }
-
 
     public void OnUpdate()
     {
         cameraController.OnUpdate(gameData, Time.deltaTime);
         playerController.OnUpdate();
-        HandleButtonClick();
     }
 }

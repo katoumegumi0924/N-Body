@@ -6,20 +6,20 @@ using UnityEngine.Rendering.Universal;
 /// </summary>
 public class CameraController
 {
+    private Vector2 _camera_position;
+    private float _camera_zoom;
+
     private const float ZOOM_SPEED = 0.5f;
     private const float MOVE_SPEED = 2.0f;
 
+    private Camera mainCamera;
+
     public void Init(GameData gameData)
     {
-        Camera mainCam = Camera.main;
+        mainCamera = Camera.main;
 
-        // 根据屏幕初始化边界
-        float h = mainCam.orthographicSize * 2f;
-        float w = h * mainCam.aspect;
-        gameData.universeData.worldBounds = new WorldBounds { width = w, height = h };
-
-        gameData.cameraState.zoom = mainCam.orthographicSize;
-        gameData.cameraState.position = Vector2.zero;
+        _camera_position = Vector2.zero;
+        _camera_zoom = mainCamera.orthographicSize; 
     }
 
     public void Free()
@@ -34,14 +34,14 @@ public class CameraController
 
     public void UpdateCamera(GameData gameData, float deltaTime)
     {
-        ref var state = ref gameData.cameraState;
-
         // 处理缩放
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (System.Math.Abs(scroll) > 0.01f)
         {
-            state.zoom -= scroll * state.zoom * ZOOM_SPEED;
-            state.zoom = System.Math.Clamp(state.zoom, 0.1f, 1000f);
+            _camera_zoom -= scroll * _camera_zoom * ZOOM_SPEED;
+            _camera_zoom = System.Math.Clamp(_camera_zoom, 0.1f, 450f);
+
+            mainCamera.orthographicSize = _camera_zoom;
         }
 
         // 处理平移
@@ -65,14 +65,17 @@ public class CameraController
 
         if (moveDir != Vector2.zero)
         {
-            float speed = state.zoom * MOVE_SPEED;
-            state.position += moveDir * (speed * deltaTime);
+            float speed = _camera_zoom * MOVE_SPEED;
+            _camera_position += moveDir * (speed * deltaTime);
+
+            mainCamera.transform.position = new Vector3(_camera_position.x, _camera_position.y, -10f);
         }
 
         // z键重置相机状态
         if (Input.GetKeyDown(KeyCode.Z))
         {
-            state.Reset();
+            mainCamera.transform.position = new Vector3(0f, 0f, -10f);
+            mainCamera.orthographicSize = 100f;
         }
     }
 }

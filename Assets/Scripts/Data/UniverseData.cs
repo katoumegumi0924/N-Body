@@ -8,13 +8,14 @@ public class UniverseData
 {
     public DataPool<AstroData> pool;
     public WorldBounds worldBounds;
+    
+    // 天体最大半径
+    public float MAX_RADIUS { get { return 0.4f * Math.Min(worldBounds.height, worldBounds.width); } }
 
     public void Init()
     {
         pool = new DataPool<AstroData>();
         pool.Reset();
-
-        worldBounds.Reset();
     }
 
     public void Free()
@@ -24,15 +25,13 @@ public class UniverseData
             pool.Free();
             pool = null;
         }
-
-        worldBounds.Reset();
     }
 
     // 创建天体
-    public int CreateAstro(int protoIndex, DVector2 pos, DVector2 vel, long currentTick,float massOverride = -1)
+    public int CreateAstro(int protoIndex, Vector2 pos, Vector2 vel, long currentTick, float massOverride = -1)
     {
         ref var astro = ref pool.Add(out int id);
-        astro.Init(id, protoIndex, pos, vel,currentTick, massOverride);
+        astro.Init(id, protoIndex, pos, vel, currentTick, worldBounds, massOverride);
         return id;
     }
 
@@ -51,16 +50,28 @@ public class UniverseData
 
 public struct WorldBounds
 {
-    public double width;
-    public double height;
+    public float minX;
+    public float maxX;
+    public float minY;
+    public float maxY;
 
-    public double MinX => -width * 0.5;
-    public double MaxX => width * 0.5;
-    public double MinY => -height * 0.5;
-    public double MaxY => height * 0.5;
+    public float width { get { return maxX - minX; } }
+    public float height { get { return maxY - minY; } }
+    public Vector2 centerPos { get { return new Vector2((maxX + minX) * 0.5f, (maxX + minX) * 0.5f); } }
 
-    public void Reset()
+    public void SetBounds(float minX, float maxX, float minY, float maxY)
     {
-        this = default;
+        this.minX = minX;
+        this.maxX = maxX;
+        this.minY = minY;
+        this.maxY = maxY;
+    }
+
+    public void SetBounds(float width, float height, Vector2 centerPos)
+    {
+        minX = centerPos.x - width * 0.5f;
+        maxX = centerPos.x + width * 0.5f;
+        minY = centerPos.y - height * 0.5f;
+        maxY = centerPos.y + height * 0.5f;
     }
 }

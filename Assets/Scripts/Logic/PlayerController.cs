@@ -9,6 +9,11 @@ public class PlayerController
     private GameData gameData;
     private UniverseGen universeGen;
 
+    private bool isInputEnable = true;
+    public bool isDragging = false;
+    public Vector2 dragStartPos;
+    public Vector2 dragEndPos;
+
     public void Init(GameData _data, UniverseGen _universeGen)
     {
         gameData = _data;
@@ -28,29 +33,25 @@ public class PlayerController
 
     public void HandleMouseInput()
     {
-        DVector2 mousePos = GetWorldMousePos();
-        if (Input.GetMouseButtonDown(0) && EventSystem.current != null)
-        {
-            if (EventSystem.current.IsPointerOverGameObject())
-            {
-                return; // 鼠标在UI上，不执行任何拖拽逻辑
-            }
-        }
+        // 演示稳定天体系统时禁用鼠标生成新的天体
+        if (!isInputEnable)
+            return;
 
+        Vector2 mousePos = GetWorldMousePos();
         if (Input.GetMouseButtonDown(0))
         {
-            gameData.interactionData.isDragging = true;
-            gameData.interactionData.dragStartPos = mousePos;
+            isDragging = true;
+            dragStartPos = mousePos;
         }
 
-        if (gameData.interactionData.isDragging)
+        if (isDragging)
         {
-            gameData.interactionData.dragEndPos = mousePos;
+            dragEndPos = mousePos;
             if (Input.GetMouseButtonUp(0))
             {
-                gameData.interactionData.isDragging = false;
-                gameData.interactionData.dragEndPos = mousePos;
-                DVector2 velocity = (gameData.interactionData.dragStartPos - mousePos) * GameConfig.universeConfig.launchForce;
+                isDragging = false;
+                dragEndPos = mousePos;
+                Vector2 velocity = (dragStartPos - dragEndPos) * GameConfig.universeConfig.launchForce;
                 SpawnRandomAstro(mousePos, velocity);
             }
         }
@@ -64,32 +65,51 @@ public class PlayerController
         float h = (float)gameData.universeData.worldBounds.height;
 
         // 生成稳定的模拟天体系统
-        if (Input.GetKeyDown(KeyCode.Alpha1)) 
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
             universeGen.LoadBinaryStars(h);
+            isInputEnable = false;
+        } 
+            
         if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
             universeGen.LoadStarSystem(h);
+            isInputEnable = false;
+        }
+            
         if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
             universeGen.LoadThreeBodyFigure8(h);
+            isInputEnable = false;
+        }
+            
         if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
             universeGen.LoadSunEarthMoon(h);
-
+            isInputEnable = false;
+        }
+            
         // 重置/清空
         if (Input.GetKeyDown(KeyCode.R))
+        {
             gameData.universeData.ClearAll();
+            isInputEnable = true;
+        }
+            
     }
 
-    private DVector2 GetWorldMousePos()
+    private Vector2 GetWorldMousePos()
     {
         Vector3 mouseScreenPos = Input.mousePosition;
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
-        return new DVector2(worldPos.x, worldPos.y);
+        return new Vector2(worldPos.x, worldPos.y);
     }
 
-    private void SpawnRandomAstro(DVector2 pos, DVector2 vel)
+    private void SpawnRandomAstro(Vector2 pos, Vector2 vel)
     {
         if (ProtoDB.ProtoSet.Count == 0)
             return;
         int protoIndex = Random.Range(0, ProtoDB.ProtoSet.Count);
-        gameData.universeData.CreateAstro(protoIndex, pos, vel, gameData.clock.totalTicks);
+        gameData.universeData.CreateAstro(protoIndex, pos, vel, gameData.universeTime.totalTicks);
     }
 }

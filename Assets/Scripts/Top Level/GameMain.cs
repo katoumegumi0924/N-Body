@@ -5,23 +5,21 @@ using UnityEngine;
 /// </summary>
 public class GameMain : MonoBehaviour
 {
-    private GameData gameData;
-    private GameLogic gameLogic;
-    private GameModel gameModel;
+    public GameData gameData;
+    public GameLogic gameLogic;
+    public GameModel gameModel;
 
     public void Init()
     {
-        // 允许程序在后台运行，避免失去焦点时停止
-        Application.runInBackground = true;
-
         gameData = new GameData();
         gameData.Init();
+        gameData.SetNew();
 
         gameLogic = new GameLogic();
         gameLogic.Init(gameData);
 
         gameModel = new GameModel();
-        gameModel.Init(gameData);
+        gameModel.Init(gameData, gameLogic);
     }
 
     public void Free()
