@@ -6,9 +6,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GameResourcesConfig", menuName = "NBody/GameConfig/GameResourcesConfig")]
 public class GameResourcesConfig : ScriptableObject
 {
-    [Header("AstroProtoSet")]
-    public AstroProtoSet protoSet;
-
     [Header("Rendering Assets")]
     public Mesh astroMesh;
     public Material astroMaterial;

@@ -1,7 +1,4 @@
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.UI;
 
 /// <summary>
 /// AstroRender：
@@ -21,25 +18,36 @@ public class AstroRenderer
 
     public void Init()
     {
-        protoSet = ProtoDB.ProtoSet;
-        mesh = GameConfig.gameResourcesConfig.astroMesh;
-        material = GameConfig.gameResourcesConfig.astroMaterial;
+        protoSet = ProtoDB.protoSet;
+        mesh =  Mesh.Instantiate(GameConfig.gameResourcesConfig.astroMesh);
+        material = Material.Instantiate(GameConfig.gameResourcesConfig.astroMaterial);
 
         matrices = new Matrix4x4[BATCH_SIZE];
         colors = new Vector4[BATCH_SIZE];
         mpb = new MaterialPropertyBlock();
-
-        mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 20000f);
     }
 
     public void Free()
     {
         protoSet = null;
-        mesh = null;
-        material = null;
         matrices = null;
         colors = null;
-        mpb = null;
+
+        if (mesh != null)
+        {
+            Mesh.Destroy(mesh);
+        }
+
+        if (material != null)
+        {
+            Material.Destroy(material);
+        }
+
+        if (mpb != null)
+        {
+            mpb.Clear();
+            mpb = null;
+        }      
     }
 
     public void RenderTick(GameData data)
@@ -51,7 +59,7 @@ public class AstroRenderer
         var pool = data.universeData.pool;
         int cursor = pool.cursor;
         int batchCount = 0;
-        long currentTick = data.universeTime.totalTicks;
+        long currentTick = data.universeTimeData.tickCounter;
 
         // 遍历数据进行渲染
         for (int i = 1; i < cursor; ++i)
@@ -65,7 +73,7 @@ public class AstroRenderer
 
             // 根据存活时间计算天体颜色
             long ageTick = currentTick - astro.birthTick;
-            float age = (float)data.universeTime.ToSeconds(ageTick);
+            float age = data.universeTimeData.GetSeconds(ageTick);
             float t = Mathf.Clamp01(age / proto.evolutionTime);
 
             colors[batchCount] = proto.colorRange.Evaluate(t);

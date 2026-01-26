@@ -7,17 +7,9 @@ public static class ProtoDB
 {
     private static AstroProtoSet _astroProtoSet;
 
-    public static AstroProtoSet ProtoSet
-    {
-        get
-        {
-            if (_astroProtoSet == null)
-                LoadProtoSet();
-            return _astroProtoSet;
-        }
-    }
+    public static AstroProtoSet protoSet { get { return _astroProtoSet; } }
 
-    private static void LoadProtoSet()
+    public static void LoadProtoSet()
     {
         if (_astroProtoSet == null)
         {

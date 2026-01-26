@@ -24,14 +24,7 @@ public class GameModel
 
     public void Free()
     {
-        if (gameData != null)
-        {
-            int cursor = gameData.universeData.pool.cursor;
-            for (int i = 0; i < cursor; ++i)
-            {
-                gameData.universeData.pool[i].Reset();
-            }
-        }
+        gameData = null;
 
         if (astroRenderer != null)
         {

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// CameraController：
@@ -11,8 +10,10 @@ public class CameraController
 
     private const float ZOOM_SPEED = 0.5f;
     private const float MOVE_SPEED = 2.0f;
+    private const float MAX_ZOOM = 1000f;
+    private const float MIN_ZOOM = 1.0f;
 
-    private Camera mainCamera;
+    public Camera mainCamera;
 
     public void Init(GameData gameData)
     {
@@ -24,22 +25,22 @@ public class CameraController
 
     public void Free()
     {
-
+        mainCamera = null;
     }
 
-    public void OnUpdate(GameData gameData, float deltaTime)
+    public void OnUpdate(GameData gameData)
     {
-        UpdateCamera(gameData, deltaTime);
+        UpdateCamera(gameData);
     }
 
-    public void UpdateCamera(GameData gameData, float deltaTime)
+    public void UpdateCamera(GameData gameData)
     {
         // 处理缩放
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (System.Math.Abs(scroll) > 0.01f)
         {
             _camera_zoom -= scroll * _camera_zoom * ZOOM_SPEED;
-            _camera_zoom = System.Math.Clamp(_camera_zoom, 0.1f, 450f);
+            _camera_zoom = Mathf.Clamp(_camera_zoom, MIN_ZOOM, MAX_ZOOM);
 
             mainCamera.orthographicSize = _camera_zoom;
         }
@@ -66,7 +67,7 @@ public class CameraController
         if (moveDir != Vector2.zero)
         {
             float speed = _camera_zoom * MOVE_SPEED;
-            _camera_position += moveDir * (speed * deltaTime);
+            _camera_position += moveDir * (speed * Time.deltaTime);
 
             mainCamera.transform.position = new Vector3(_camera_position.x, _camera_position.y, -10f);
         }
@@ -74,8 +75,10 @@ public class CameraController
         // z键重置相机状态
         if (Input.GetKeyDown(KeyCode.Z))
         {
-            mainCamera.transform.position = new Vector3(0f, 0f, -10f);
-            mainCamera.orthographicSize = 100f;
+            _camera_position = GameConfig.universeConfig.centerPos;
+            _camera_zoom = GameConfig.universeConfig.height * 0.5f;
+            mainCamera.transform.position = new Vector3(_camera_position.x, _camera_position.y, -10f);
+            mainCamera.orthographicSize = _camera_zoom;
         }
     }
 }

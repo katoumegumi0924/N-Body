@@ -25,13 +25,11 @@ public class UniverseConfig : ScriptableObject
     public float minDebrisSpeed = 50f;
     public float maxDebrisSpeed = 100f;
 
-    [Tooltip("物理帧执行频率")]
-    public float physicsStep = 0.02f;
-    [Tooltip("单帧最大执行次数")]
-    public int maxStepsPerFrame = 1000;
-
     [Tooltip("宇宙初始边界属性")]
     public float width = 400;
     public float height = 200;
     public Vector2 centerPos = Vector2.zero;
+
+    [Tooltip("引力软化")]
+    public float gravitySoft = 10;
 }

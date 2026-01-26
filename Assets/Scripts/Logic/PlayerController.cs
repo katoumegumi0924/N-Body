@@ -1,8 +1,7 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 /// <summary>
-/// PlayerInput：
+/// PlayerController：
 /// </summary>
 public class PlayerController
 {
@@ -23,6 +22,12 @@ public class PlayerController
     public void Free()
     {
         gameData = null;
+        
+        if (universeGen != null)
+        {
+            universeGen.Free();
+            universeGen = null;
+        }
     }
 
     public void OnUpdate()
@@ -62,40 +67,69 @@ public class PlayerController
         if (universeGen == null) 
             return;
 
-        float h = (float)gameData.universeData.worldBounds.height;
+        float orbitRadius = Mathf.Min(gameData.universeData.worldBounds.height, gameData.universeData.worldBounds.width);
 
         // 生成稳定的模拟天体系统
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            universeGen.LoadBinaryStars(h);
+            universeGen.LoadBinaryStars(orbitRadius);
             isInputEnable = false;
         } 
             
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            universeGen.LoadStarSystem(h);
+            universeGen.LoadStarSystem(orbitRadius);
             isInputEnable = false;
         }
             
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            universeGen.LoadThreeBodyFigure8(h);
+            universeGen.LoadThreeBodyFigure8(orbitRadius);
             isInputEnable = false;
         }
             
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            universeGen.LoadSunEarthMoon(h);
+            universeGen.LoadSunEarthMoon(orbitRadius);
             isInputEnable = false;
         }
-            
+
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            universeGen.LoadHierarchicalTripleSystem(orbitRadius);
+            isInputEnable = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha6))
+        {
+            universeGen.LoadLagrangePoints(orbitRadius);
+            isInputEnable = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha7))
+        {
+            universeGen.LoadKlempererRosette(orbitRadius);
+            isInputEnable = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha8))
+        {
+            universeGen.LoadKlempererRosetteCore(orbitRadius);
+            isInputEnable = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha9))
+        {
+            universeGen.LoadStableLagrangeTriangle(orbitRadius);
+            isInputEnable = false;
+        }
+
         // 重置/清空
         if (Input.GetKeyDown(KeyCode.R))
         {
-            gameData.universeData.ClearAll();
+            universeGen.ResetScene();
             isInputEnable = true;
-        }
-            
+        }    
     }
 
     private Vector2 GetWorldMousePos()
@@ -107,9 +141,9 @@ public class PlayerController
 
     private void SpawnRandomAstro(Vector2 pos, Vector2 vel)
     {
-        if (ProtoDB.ProtoSet.Count == 0)
+        if (ProtoDB.protoSet.Count == 0)
             return;
-        int protoIndex = Random.Range(0, ProtoDB.ProtoSet.Count);
-        gameData.universeData.CreateAstro(protoIndex, pos, vel, gameData.universeTime.totalTicks);
+        int protoIndex = Random.Range(0, ProtoDB.protoSet.Count);
+        gameData.universeData.CreateAstro(protoIndex, pos, vel, gameData.universeTimeData.tickCounter);
     }
 }

@@ -34,9 +34,11 @@ public class PlayerControllerGizmos
         // 渲染拖拽路径
         dragLineRenderer.Draw(gameLogic.playerController.isDragging,
                               gameLogic.playerController.dragStartPos,
-                              gameLogic.playerController.dragEndPos);
+                              gameLogic.playerController.dragEndPos,
+                              gameLogic.cameraController.mainCamera);
 
         // 渲染世界边界
-        worldBoundsRenderer.Draw(gameData.universeData.worldBounds);
+        worldBoundsRenderer.Draw(gameData.universeData.worldBounds,
+                                 gameLogic.cameraController.mainCamera);
     }
 }

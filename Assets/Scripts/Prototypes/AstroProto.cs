@@ -28,6 +28,8 @@ public class AstroProto : ScriptableObject
     // 辅助方法，生成随机属性
     public float GetRandomMass()
     {
+        // 最小随机质量不能小于1
+        minMass = minMass > 1.0f ? minMass : 1.0f;
         return Random.Range(minMass, maxMass);
     }
 

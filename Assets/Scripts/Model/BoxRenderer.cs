@@ -8,6 +8,8 @@ public class BoxRenderer
     private LineRenderer line;
     private GameObject lineObj;
 
+    private const float BOX_WIDTH_COEF = 0.004f;
+
     public void Init()
     {
         GameObject prefab = GameConfig.gameResourcesConfig.dragLinePrefab;
@@ -35,17 +37,18 @@ public class BoxRenderer
         }
     }
 
-    public void Draw(WorldBounds bounds)
+    public void Draw(WorldBounds bounds, Camera camera)
     {
         if (line == null) 
             return;
 
-        float x = (float)bounds.width * 0.5f;
-        float y = (float)bounds.height * 0.5f;
+        line.loop = true;
+        line.startWidth = BOX_WIDTH_COEF * camera.orthographicSize;
+        line.endWidth = BOX_WIDTH_COEF * camera.orthographicSize;
 
-        line.SetPosition(0, new Vector3(-x, y, 0));
-        line.SetPosition(1, new Vector3(x, y, 0));
-        line.SetPosition(2, new Vector3(x, -y, 0));
-        line.SetPosition(3, new Vector3(-x, -y, 0));
+        line.SetPosition(0, new Vector3(bounds.minX, bounds.minY, 0));
+        line.SetPosition(1, new Vector3(bounds.maxX, bounds.minY, 0));
+        line.SetPosition(2, new Vector3(bounds.maxX, bounds.maxY, 0));
+        line.SetPosition(3, new Vector3(bounds.minX, bounds.maxY, 0));
     }
 }

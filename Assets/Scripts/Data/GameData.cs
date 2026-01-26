@@ -6,22 +6,20 @@ using UnityEngine;
 public class GameData
 {
     public UniverseData universeData;
-    public SimulationTimeData universeTime;
+    public TimeData universeTimeData;
 
     public void Init()
     {
         universeData = new UniverseData();
         universeData.Init();
 
-        universeTime = new SimulationTimeData();
-        universeTime.Init();
+        universeTimeData = new TimeData();
+        universeTimeData.Init();
     }
 
     public void SetNew()
     {
-        universeData.worldBounds.SetBounds(GameConfig.universeConfig.width, 
-                                           GameConfig.universeConfig.height, 
-                                           GameConfig.universeConfig.centerPos);
+        universeData.SetNew();
     }
 
     public void Free()
@@ -32,10 +30,10 @@ public class GameData
             universeData = null;
         }
 
-        if (universeTime != null)
+        if (universeTimeData != null)
         {
-            universeTime.Free();
-            universeTime = null;
+            universeTimeData.Free();
+            universeTimeData = null;
         }
     }
 }

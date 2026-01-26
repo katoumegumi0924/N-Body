@@ -18,7 +18,7 @@ MonoBehaviour:
   minMass: 30
   maxMass: 50
   density: 1
-  elasticityModulus: 0.9
+  elasticityCeof: 0.9
   colorRange:
     serializedVersion: 2
     key0: {r: 0.9811321, g: 0.94899935, b: 0.64328945, a: 1}

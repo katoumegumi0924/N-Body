@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 /// <summary>
@@ -8,9 +7,9 @@ public class UniverseData
 {
     public DataPool<AstroData> pool;
     public WorldBounds worldBounds;
-    
+
     // 天体最大半径
-    public float MAX_RADIUS { get { return 0.4f * Math.Min(worldBounds.height, worldBounds.width); } }
+    public float MAX_RADIUS { get { return 0.4f * Mathf.Min(worldBounds.height, worldBounds.width); } }
 
     public void Init()
     {
@@ -27,11 +26,19 @@ public class UniverseData
         }
     }
 
+    public void SetNew()
+    {
+        worldBounds.SetBounds(GameConfig.universeConfig.width,
+                              GameConfig.universeConfig.height,
+                              GameConfig.universeConfig.centerPos);
+    }
+
     // 创建天体
     public int CreateAstro(int protoIndex, Vector2 pos, Vector2 vel, long currentTick, float massOverride = -1)
     {
         ref var astro = ref pool.Add(out int id);
-        astro.Init(id, protoIndex, pos, vel, currentTick, worldBounds, massOverride);
+        astro.Init(id, protoIndex, pos, vel, currentTick, massOverride);
+        EnsureInWorld(ref astro);
         return id;
     }
 
@@ -41,10 +48,17 @@ public class UniverseData
         pool.Remove(id);
     }
 
-    // 重置状态 销毁所有天体
-    public void ClearAll()
+    private void EnsureInWorld(ref AstroData astro)
     {
-        pool.ClearAll();
+        float r = astro.radius;
+
+        float minSafeX = worldBounds.minX + r;
+        float maxSafeX = worldBounds.maxX - r;
+        float minSafeY = worldBounds.minY + r;
+        float maxSafeY = worldBounds.maxX - r;
+
+        astro.position.x = Mathf.Clamp(astro.position.x, minSafeX, maxSafeX);
+        astro.position.y = Mathf.Clamp(astro.position.y, minSafeY, maxSafeY);
     }
 }
 
@@ -57,7 +71,7 @@ public struct WorldBounds
 
     public float width { get { return maxX - minX; } }
     public float height { get { return maxY - minY; } }
-    public Vector2 centerPos { get { return new Vector2((maxX + minX) * 0.5f, (maxX + minX) * 0.5f); } }
+    public Vector2 centerPos { get { return new Vector2((maxX + minX) * 0.5f, (maxY + minY) * 0.5f); } }
 
     public void SetBounds(float minX, float maxX, float minY, float maxY)
     {

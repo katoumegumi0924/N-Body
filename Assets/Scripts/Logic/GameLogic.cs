@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -8,12 +7,10 @@ public class GameLogic
 {
     private GameData gameData;
     private UniverseLogic universeLogic;
-    public PlayerController playerController;
-    private CameraController cameraController;
     private UniverseGen universeGen;
 
-    // 时间累加器 指定时间执行一次物理Logic，避免倍速情况下dt过大
-    private double accumulator;
+    public PlayerController playerController;
+    public CameraController cameraController;
 
     public void Init(GameData _gameData)
     {
@@ -35,44 +32,49 @@ public class GameLogic
     public void Free()
     {
         gameData = null;
-        universeLogic = null;
-        playerController = null;
+
+        if (universeLogic != null)
+        {
+            universeLogic.Free();
+            universeLogic = null;
+        }
+        
+        if (universeGen != null)
+        {
+            universeGen.Free();
+            universeGen = null;
+        }
+
+        if (playerController != null)
+        {
+            playerController.Free();
+            playerController = null;
+        }
+        
+        if (cameraController != null)
+        {
+            cameraController.Free();
+            cameraController = null;
+        }
     }
 
-    public void GameTick(float deltaTime)
+    public void SetNew()
     {
-        // 获取固定步长和最大步数
-        float pStep = GameConfig.universeConfig.physicsStep;
-        int maxSteps = GameConfig.universeConfig.maxStepsPerFrame;
+        universeGen.SetNew();
+    }
 
-        double dt = deltaTime * gameData.universeTime.timeScale;
-        accumulator += dt;
-        int stepCount = 0;
-        while (accumulator >= pStep)
-        {
-            // 推进Ticks
-            long ticksInStep = gameData.universeTime.ToTicks(pStep);
-            gameData.universeTime.totalTicks += ticksInStep;
+    public void GameTick()
+    {
+        gameData.universeTimeData.EarlyTick();
 
-            // 执行核心物理逻辑
-            universeLogic.LogicTick(gameData, pStep);
+        universeLogic.LogicTick(gameData);
 
-            // 消耗累加器
-            accumulator -= pStep;
-
-            // 限制单次执行的最大步数
-            stepCount++;
-            if (stepCount > maxSteps)
-            {
-                accumulator = 0;
-                break;
-            }
-        }
+        gameData.universeTimeData.LateTick();
     }
 
     public void OnUpdate()
     {
-        cameraController.OnUpdate(gameData, Time.deltaTime);
         playerController.OnUpdate();
+        cameraController.OnUpdate(gameData);
     }
 }

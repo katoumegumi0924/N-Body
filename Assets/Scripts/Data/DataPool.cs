@@ -160,11 +160,6 @@ public class DataPool<T> where T : struct, IPoolElement
         }
     }
 
-    public void ClearAll()
-    {
-        Reset();
-    }
-
     // 索引器
     public ref T this[int index]
     {

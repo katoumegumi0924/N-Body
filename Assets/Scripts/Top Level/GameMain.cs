@@ -11,12 +11,15 @@ public class GameMain : MonoBehaviour
 
     public void Init()
     {
+        ProtoDB.LoadProtoSet();
+
         gameData = new GameData();
         gameData.Init();
         gameData.SetNew();
 
         gameLogic = new GameLogic();
         gameLogic.Init(gameData);
+        gameLogic.SetNew();
 
         gameModel = new GameModel();
         gameModel.Init(gameData, gameLogic);
@@ -51,7 +54,7 @@ public class GameMain : MonoBehaviour
 
     private void FixedUpdate()
     {
-        gameLogic.GameTick(Time.fixedDeltaTime);
+        gameLogic.GameTick();
     }
 
     private void OnEnable()

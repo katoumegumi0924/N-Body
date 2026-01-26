@@ -49,18 +49,19 @@ public class UniverseLogic
         }
     }
 
-    public void LogicTick(GameData data, float deltaTime)
+    public void LogicTick(GameData gameData)
     {
-        CalculatePosition(data, deltaTime, data.universeData.worldBounds);
-        HandleCollision(data);
-        PostTickProcess(data);
+        float dt = gameData.universeTimeData.tickDelta * TimeData.tickDeltaTime;
+        CalculatePosition(gameData, dt);
+        HandleCollision(gameData);
+        PostTickProcess(gameData);  
     }
 
     // 计算引力和速度
-    private void CalculatePosition(GameData data, float deltaTime, WorldBounds worldBounds)
+    private void CalculatePosition(GameData gameData, float dt)
     {
-        var pool = data.universeData.pool;
-        int cursor = data.universeData.pool.cursor;
+        var pool = gameData.universeData.pool;
+        int cursor = pool.cursor;
 
         // 重置天体所受引力
         for (int i = 1; i < cursor; ++i)
@@ -68,7 +69,6 @@ public class UniverseLogic
             if (pool[i].id == i)
             {
                 pool[i].force = Vector2.zero;
-       
             }
         }
 
@@ -87,19 +87,22 @@ public class UniverseLogic
 
                 Vector2 dir = astroB.position - astroA.position;
                 float distSqr = dir.sqrMagnitude;
+                // 防止除零
+                distSqr = distSqr < 1e-5f ? 1e-5f : distSqr;
                 float dist = Mathf.Sqrt(distSqr);
 
-                // 防止除零
-                distSqr = distSqr < 0.01f ? 0.1f : distSqr;
-                dist = dist < 0.01f ? 0.1f : dist;
-                // 引力计算公式 F = G * (m1 * m2) / r^3 * dir;
-                Vector2 forceVec = (G * astroA.mass * astroB.mass / (distSqr * dist)) * dir;
+                float force = G * astroA.mass * astroB.mass / (distSqr + GameConfig.universeConfig.gravitySoft);
+                Vector2 forceVec = force * (dir / dist);
 
                 astroA.force += forceVec;
                 astroB.force -= forceVec;
             }
         }
 
+        float boundsMaxX = gameData.universeData.worldBounds.maxX;
+        float boundsMinX = gameData.universeData.worldBounds.minX;
+        float boundsMaxY = gameData.universeData.worldBounds.maxY;
+        float boundsMinY = gameData.universeData.worldBounds.minY;
         // 计算加速度，处理移动
         for (int i = 1; i < cursor; ++i)
         {
@@ -109,12 +112,12 @@ public class UniverseLogic
             ref var astro = ref pool[i];
 
             Vector2 acceleration = astro.force * astro.massInv;
-            astro.velocity += acceleration * deltaTime;
-            astro.InternelUpdate(deltaTime);
+            astro.velocity += acceleration * dt;
+            astro.InternelUpdate(dt);
 
             // 边界处理
-            float maxX = worldBounds.maxX - astro.radius;
-            float minX = worldBounds.minX + astro.radius;
+            float maxX = boundsMaxX - astro.radius;
+            float minX = boundsMinX + astro.radius;
             if (astro.position.x > maxX)
             {
                 astro.position.x = maxX;
@@ -128,8 +131,8 @@ public class UniverseLogic
                     astro.velocity.x = -astro.velocity.x;
             }
 
-            float maxY = worldBounds.maxY - astro.radius;
-            float minY = worldBounds.minY + astro.radius;
+            float maxY = boundsMaxY - astro.radius;
+            float minY = boundsMinY + astro.radius;
             if (astro.position.y > maxY)
             {
                 astro.position.y = maxY;
@@ -148,7 +151,7 @@ public class UniverseLogic
     private void HandleCollision(GameData data)
     {
         var pool = data.universeData.pool;
-        int cursor = data.universeData.pool.cursor;
+        int cursor = pool.cursor;
 
         for (int i = 1; i < cursor; ++i)
         {
@@ -194,7 +197,7 @@ public class UniverseLogic
         else
         {
             NonFullyElasticCollide(ref major, ref minor);
-        }
+        }   
     }
 
     private void MergeAstro(GameData data, ref AstroData major, ref AstroData minor)
@@ -225,8 +228,8 @@ public class UniverseLogic
         float maxRadius = data.universeData.MAX_RADIUS;
 
         // 根据合并损耗率计算碎片质量与合并后质量
-        float debrisTotalMass = (float)totalMass * GameConfig.universeConfig.lossRatio;
-        float newMass = (float)totalMass - debrisTotalMass;
+        float debrisTotalMass = totalMass * GameConfig.universeConfig.lossRatio;
+        float newMass = totalMass - debrisTotalMass;
 
         Vector2 newVel = (m1 * major.velocity + m2 * minor.velocity) / totalMass;
         Vector2 centerPos = (major.position + minor.position) * 0.5f;
@@ -250,17 +253,16 @@ public class UniverseLogic
             protoId = debrisTotalMass > 200 ? 1 : 0, // 碎片总质量超过200，炸出行星
             offset = major.radius * 1.35f
         });
-
     }
 
     private void NonFullyElasticCollide(ref AstroData major, ref AstroData minor)
     {
         Vector2 dir = minor.position - major.position;
+        if (dir == Vector2.zero)
+            dir = Vector2.right * 0.01f;
+
         float distSqr = dir.sqrMagnitude;
         float dist = Mathf.Sqrt(distSqr);
-
-        if (dist < 0.01f)
-            return;
 
         Vector2 normal = dir / dist;
 
@@ -289,14 +291,13 @@ public class UniverseLogic
 
         // 非完全弹性碰撞
         // 使用平均弹性系数
-        float e = (major.elasticityCeof + minor.elasticityCeof) * 0.5f;
+        float e = (major.elasticityCoef + minor.elasticityCoef) * 0.5f;
         float j = -(1.0f + e) * velAlongNormal;
         float invMassSum = major.massInv + minor.massInv;
         if (invMassSum > 0)
         {
-            j /= major.massInv + minor.massInv;
+            j /= invMassSum;
             Vector2 impulse = j * normal;
-
             major.velocity -= impulse * major.massInv;
             minor.velocity += impulse * minor.massInv;
         }
@@ -328,7 +329,7 @@ public class UniverseLogic
                     Vector2 spawnPos = request.center + dir * request.offset;
                     Vector2 spawnVel = request.velocity + dir * Random.Range(GameConfig.universeConfig.minDebrisSpeed, GameConfig.universeConfig.maxDebrisSpeed);
 
-                    data.universeData.CreateAstro(request.protoId, spawnPos, spawnVel, data.universeTime.totalTicks, massPerDebris);
+                    data.universeData.CreateAstro(request.protoId, spawnPos, spawnVel, data.universeTimeData.tickCounter, massPerDebris);
                 }
             }
             _delay_explosion_list.Clear();
@@ -339,8 +340,8 @@ public class UniverseLogic
 // 暂存爆炸请求，防止在遍历过程中改变pool
 public struct ExplosionRequest
 {
-    public Vector2 center;            // 爆炸中心位置
-    public Vector2 velocity;          // 爆炸赋予的初速度
+    public Vector2 center;             // 爆炸中心位置
+    public Vector2 velocity;           // 爆炸赋予的初速度
     public float totalMass;            // 碎片总质量
     public int protoId;                // 碎片原型id
     public int count;                  // 碎片个数
