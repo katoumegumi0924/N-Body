@@ -9,6 +9,7 @@ public class GameLogic
     private UniverseLogic universeLogic;
     private UniverseGen universeGen;
 
+    public TimeLogic universeTimeLogic;
     public PlayerController playerController;
     public CameraController cameraController;
 
@@ -22,11 +23,14 @@ public class GameLogic
         universeGen = new UniverseGen();
         universeGen.Init(gameData);
 
+        universeTimeLogic = new TimeLogic();
+        universeTimeLogic.Init(gameData);
+
         playerController = new PlayerController();
         playerController.Init(gameData, universeGen);
 
         cameraController = new CameraController();
-        cameraController.Init(gameData);
+        cameraController.Init();
     }
 
     public void Free()
@@ -45,6 +49,12 @@ public class GameLogic
             universeGen = null;
         }
 
+        if (universeTimeLogic != null)
+        {
+            universeTimeLogic.Free();
+            universeTimeLogic = null;
+        }
+
         if (playerController != null)
         {
             playerController.Free();
@@ -61,20 +71,23 @@ public class GameLogic
     public void SetNew()
     {
         universeGen.SetNew();
+        universeTimeLogic.SetNew();
+        playerController.SetNew();
+        cameraController.SetNew();
     }
 
     public void GameTick()
     {
-        gameData.universeTimeData.EarlyTick();
+        universeTimeLogic.EarlyTick();
 
         universeLogic.LogicTick(gameData);
 
-        gameData.universeTimeData.LateTick();
+        universeTimeLogic.LateTick();
     }
 
     public void OnUpdate()
     {
         playerController.OnUpdate();
-        cameraController.OnUpdate(gameData);
+        cameraController.OnUpdate();
     }
 }

@@ -310,7 +310,7 @@ public class UniverseLogic
         {
             for (int i = 0; i < _delay_remove_list.Count; ++i)
             {
-                data.universeData.FreeAstro(_delay_remove_list[i]);
+                data.universeData.DestroyAstro(_delay_remove_list[i]);
             }
             _delay_remove_list.Clear();
         }

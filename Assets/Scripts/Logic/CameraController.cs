@@ -15,12 +15,9 @@ public class CameraController
 
     public Camera mainCamera;
 
-    public void Init(GameData gameData)
+    public void Init()
     {
         mainCamera = Camera.main;
-
-        _camera_position = Vector2.zero;
-        _camera_zoom = mainCamera.orthographicSize; 
     }
 
     public void Free()
@@ -28,12 +25,18 @@ public class CameraController
         mainCamera = null;
     }
 
-    public void OnUpdate(GameData gameData)
+    public void SetNew()
     {
-        UpdateCamera(gameData);
+        _camera_position = Vector2.zero;
+        _camera_zoom = mainCamera.orthographicSize;
     }
 
-    public void UpdateCamera(GameData gameData)
+    public void OnUpdate()
+    {
+        UpdateCamera();
+    }
+
+    public void UpdateCamera()
     {
         // 处理缩放
         float scroll = Input.GetAxis("Mouse ScrollWheel");

@@ -30,6 +30,11 @@ public class PlayerController
         }
     }
 
+    public void SetNew()
+    {
+        isInputEnable = true;
+    }
+
     public void OnUpdate()
     {
         HandleMouseInput();

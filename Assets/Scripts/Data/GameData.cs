@@ -20,6 +20,7 @@ public class GameData
     public void SetNew()
     {
         universeData.SetNew();
+        universeTimeData.SetNew();
     }
 
     public void Free()

@@ -23,26 +23,6 @@ public struct AstroData : IPoolElement
 
     public int ID { get { return id; } set { id = value; } }
 
-    // 初始化函数
-    public void Init(int id, int protoIndex, Vector2 pos, Vector2 vel, long currentTick, float massOverride = -1f)
-    {
-        AstroProto proto = ProtoDB.protoSet[protoIndex];
-
-        this.id = id;
-        this.protoId = proto.id;
-        this.type = proto.type;
-
-        this.position = pos;
-        this.velocity = vel;
-        this.force = new Vector2(0, 0);
-        this.mass = massOverride > 0 ? massOverride : proto.GetRandomMass(); // 未指定质量时，获取一个原型范围内的随机质量
-        this.radius = proto.GetRadius(this.mass);
-        this.density = proto.density;
-        this.elasticityCoef = proto.elasticityCeof;
-        this.massInv = this.mass > 1e-5f ? 1.0f / mass : 0f;
-        this.birthTick = currentTick;
-    }
-
     // 清空函数
     public void Reset()
     {

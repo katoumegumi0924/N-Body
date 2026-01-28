@@ -1,4 +1,5 @@
 using UnityEngine;
+using static UnityEditor.ShaderData;
 
 /// <summary>
 /// UniverseData：
@@ -37,13 +38,31 @@ public class UniverseData
     public int CreateAstro(int protoIndex, Vector2 pos, Vector2 vel, long currentTick, float massOverride = -1)
     {
         ref var astro = ref pool.Add(out int id);
-        astro.Init(id, protoIndex, pos, vel, currentTick, massOverride);
+
+        AstroProto proto = ProtoDB.protoSet[protoIndex];
+        if (proto != null)
+        {
+            astro.id = id;
+            astro.protoId = proto.id;
+            astro.type = proto.type;
+
+            astro.position = pos;
+            astro.velocity = vel;
+            astro.force = Vector2.zero;
+            astro.mass = massOverride > 0 ? massOverride : proto.GetRandomMass(); // 未指定质量时，获取一个原型范围内的随机质量
+            astro.radius = proto.GetRadius(astro.mass);
+            astro.density = proto.density;
+            astro.elasticityCoef = proto.elasticityCeof;
+            astro.massInv = astro.mass > 1e-5f ? 1.0f / astro.mass : 0f;
+            astro.birthTick = currentTick;
+        }
+        
         EnsureInWorld(ref astro);
         return id;
     }
 
     // 销毁天体
-    public void FreeAstro(int id)
+    public void DestroyAstro(int id)
     {
         pool.Remove(id);
     }
@@ -55,7 +74,7 @@ public class UniverseData
         float minSafeX = worldBounds.minX + r;
         float maxSafeX = worldBounds.maxX - r;
         float minSafeY = worldBounds.minY + r;
-        float maxSafeY = worldBounds.maxX - r;
+        float maxSafeY = worldBounds.maxY - r;
 
         astro.position.x = Mathf.Clamp(astro.position.x, minSafeX, maxSafeX);
         astro.position.y = Mathf.Clamp(astro.position.y, minSafeY, maxSafeY);

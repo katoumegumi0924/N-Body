@@ -17,13 +17,19 @@ public class TimeData
     public void Init()
     {
         tickCounter = 0L;
-        _tickDelta = 10;
+        _tickDelta = 0;
     }
 
     public void Free()
     {
         tickCounter = 0L;
         _tickDelta = 0;
+    }
+
+    public void SetNew()
+    {
+        tickCounter = 0;
+        _tickDelta = 10;
     }
 
     public void SetSpeed(int index)
@@ -41,15 +47,5 @@ public class TimeData
     public void TogglePause()
     {
         _pausing = !_pausing;
-    }
-
-    public void EarlyTick()
-    {
-        tickCounter += tickDelta;
-    }
-
-    public void LateTick()
-    {
-
     }
 }
